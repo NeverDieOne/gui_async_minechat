@@ -24,6 +24,10 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+async def watch_for_connection(watchdog_queue: asyncio.Queue) -> None:
+    pass
+
+
 async def main():
     load_dotenv()
     args = get_args()
@@ -34,6 +38,7 @@ async def main():
     sending_queue = asyncio.Queue()
     status_updates_queue = asyncio.Queue()
     file_queue = asyncio.Queue()
+    watchdog_queue = asyncio.Queue()
 
 
     try:

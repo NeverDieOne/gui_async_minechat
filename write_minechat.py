@@ -8,11 +8,15 @@ from exceptions import InvalidToken
 import gui
 
 
-def clean_string(string: str):
+def clean_string(string: str) -> str:
     return string.replace('\\n', '')
 
 
-async def register(username, writer, reader):
+async def register(
+    username: str,
+    writer: asyncio.StreamWriter,
+    reader: asyncio.StreamReader
+) -> dict:
     writer.write(f"{clean_string(username)}\n\n".encode())
     await writer.drain()
 
@@ -23,7 +27,11 @@ async def register(username, writer, reader):
     return recieved_data
 
 
-async def authorise(token, writer, reader):
+async def authorise(
+    token: str,
+    writer: asyncio.StreamWriter,
+    reader: asyncio.StreamReader
+) -> dict:
     logging.info(await reader.readuntil(b'\n'))
 
     writer.write(f"{clean_string(token)}\n".encode())
@@ -34,7 +42,7 @@ async def authorise(token, writer, reader):
     return recieved_data
 
 
-async def submit_message(writer, message):
+async def submit_message(writer: asyncio.StreamWriter, message: str) -> None:
     writer.write(f"{clean_string(message)}\n\n".encode())
     await writer.drain()
 
