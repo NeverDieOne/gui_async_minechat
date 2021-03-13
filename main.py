@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv
 
-from listen_minechat import listen_tcp_connection
+import listen_minechat
 import gui
 
 
@@ -23,11 +23,13 @@ async def main():
     message_queue = asyncio.Queue()
     sending_queue = asyncio.Queue()
     status_updates_queue = asyncio.Queue()
+    file_queue = asyncio.Queue()
 
 
     await asyncio.gather(
-        listen_tcp_connection(args.host, args.port, message_queue),
-        gui.draw(message_queue, sending_queue, status_updates_queue)
+        listen_minechat.listen_tcp_connection(args.host, args.port, message_queue, file_queue),
+        gui.draw(message_queue, sending_queue, status_updates_queue),
+        listen_minechat.save_messages(args.file, message_queue, file_queue)
     )
 
 
