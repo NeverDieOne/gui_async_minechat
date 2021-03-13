@@ -1,0 +1,2 @@
+class UnavailableOS(Exception):
+    pass
