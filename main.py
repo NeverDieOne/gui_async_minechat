@@ -25,7 +25,6 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--host', default=os.getenv('HOST') or 'minechat.dvmn.org', help='Host to connection')
     parser.add_argument('--file', default=os.getenv('OUTPUT_FILE') or 'output.txt', help='Output file with chat')
     parser.add_argument('--token', default=os.getenv('MINECHAT_TOKEN'), help='Token to connect')
-    parser.add_argument('--text', help='Text message to write in chat')
     parser.add_argument('--username', default=os.getenv('MINECHAT_USERNAME') or 'JustName', help='Username to connect')
     return parser.parse_args()
 

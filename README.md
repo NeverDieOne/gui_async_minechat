@@ -14,30 +14,14 @@
 
 ## Пример запуска
 
-### Чтение чата:
-
-Необходимые параметры:
-* `host` - хост для подключения
-* `port` - порт для подключения
-* `file` - файл, в который будет выведен результат
-
-```bash
-python listen-minechat.py --host minechat.dvmn.org --port 5000 --file output.txt
+```python
+python main.py
 ```
 
-### Отправка сообщения в чат:
+Все доступные аргументы для запуска можно посмотреть с помощью:
 
-Необходимые параметры:
-* `host` - хост для подключения
-* `port` - порт для подключения
-
-Опциональные параметры:
-* `token` - токен, необходимый для подключения
-* `text` - сообщение, которое будет отправлено в чат
-* `username` - никнейм для регистрации (указывается в отсутствии токена !!!)
-    
-```bash
-python write-minechat.py --host minechat.dvmn.org --port 5050 --text Hello
+```python
+python main.py --help
 ```
 
 ## <Опционально> `.env`
@@ -46,11 +30,16 @@ python write-minechat.py --host minechat.dvmn.org --port 5050 --text Hello
 
 Возможные переменные `.env`:
 
-`HOST`,
-`LISTEN_PORT`,
-`WRITE_PORT`,
-`OUTPUT_FILE`,
-`MINECHAT_TOKEN`,
+`HOST`
+
+`LISTEN_PORT`
+
+`WRITE_PORT`
+
+`OUTPUT_FILE`
+
+`MINECHAT_TOKEN`
+
 `MINECHAT_USERNAME`
 
 ## Примечание
