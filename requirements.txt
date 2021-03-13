@@ -1,2 +1,4 @@
 python-dotenv==0.13.0
 aiofiles==0.5.0
+async-timeout==3.0.1
+anyio==2.2.0

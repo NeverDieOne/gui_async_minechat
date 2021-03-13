@@ -22,23 +22,20 @@ async def listen_tcp_connection(
     port: int,
     message_queue: asyncio.Queue,
     file_queue: asyncio.Queue,
-    status_queue: asyncio.Queue
+    status_queue: asyncio.Queue,
+    watchdog_queue: asyncio.Queue
 ) -> None:
     while True:
         try:
             async with open_connection(host, port) as connection:
-                status_queue.put_nowait(gui.ReadConnectionStateChanged.ESTABLISHED)
                 reader, writer = connection
                 while True:
                     message = await get_message(reader)
                     message_queue.put_nowait(message.strip())
                     file_queue.put_nowait(message)
+                    watchdog_queue.put_nowait('New message in chat')
         except (TimeoutError, socket.gaierror):
             status_queue.put_nowait(gui.ReadConnectionStateChanged.INITIATED)
-            print(
-                'Потеряно соединение с сетью, попытка переподключения через 10 сек',
-                file=sys.stderr
-            )
             await asyncio.sleep(10)
 
 

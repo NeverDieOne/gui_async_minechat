@@ -3,13 +3,19 @@ import argparse
 import os
 import logging
 from tkinter import messagebox
+import time
+from contextlib import suppress
 
+from async_timeout import timeout
 from dotenv import load_dotenv
 
 import listen_minechat
 import write_minechat
 import gui
 from exceptions import InvalidToken
+
+
+watchdog_logger = logging.getLogger('watchdog_logger')
 
 
 def get_args() -> argparse.Namespace:
@@ -24,8 +30,20 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-async def watch_for_connection(watchdog_queue: asyncio.Queue) -> None:
-    pass
+async def watch_for_connection(watchdog_queue: asyncio.Queue, status_queue: asyncio.Queue) -> None:
+    while True:
+        timestamp = int(time.time())
+        time_out = 10
+        try:
+            async with timeout(time_out):
+                message = await watchdog_queue.get()
+                logging.info(f'[{timestamp}] {message}')
+                status_queue.put_nowait(gui.ReadConnectionStateChanged.ESTABLISHED)
+                status_queue.put_nowait(gui.SendingConnectionStateChanged.ESTABLISHED)
+        except asyncio.exceptions.TimeoutError:
+            status_queue.put_nowait(gui.ReadConnectionStateChanged.CLOSED)
+            status_queue.put_nowait(gui.SendingConnectionStateChanged.CLOSED)
+            logging.info(f'[{timestamp}] {time_out}s timeout is elapsed')
 
 
 async def main():
@@ -40,12 +58,16 @@ async def main():
     file_queue = asyncio.Queue()
     watchdog_queue = asyncio.Queue()
 
-
     try:
         await asyncio.gather(
-            listen_minechat.listen_tcp_connection(args.host, args.l_port, message_queue, file_queue, status_updates_queue),
+            listen_minechat.listen_tcp_connection(
+                args.host, args.l_port, message_queue, file_queue, status_updates_queue, watchdog_queue
+            ),
             listen_minechat.save_messages(args.file, message_queue, file_queue),
-            write_minechat.write_tcp_connection(args.host, args.w_port, args.token, sending_queue, status_updates_queue),
+            write_minechat.write_tcp_connection(
+                args.host, args.w_port, args.token, sending_queue, status_updates_queue, watchdog_queue
+            ),
+            watch_for_connection(watchdog_queue, status_updates_queue),
             gui.draw(message_queue, sending_queue, status_updates_queue),
         )
     except InvalidToken as e:
@@ -53,4 +75,5 @@ async def main():
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    with suppress(KeyboardInterrupt, gui.TkAppClosed):
+        asyncio.run(main())

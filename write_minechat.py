@@ -52,15 +52,17 @@ async def write_tcp_connection(
     port: int,
     token: str,
     sending_queue: asyncio.Queue,
-    status_queue: asyncio.Queue
+    status_queue: asyncio.Queue,
+    watchdog_queue: asyncio.Queue
 ) -> None:
     while True:
         try:
             async with open_connection(host, port) as connection:
-                status_queue.put_nowait(gui.SendingConnectionStateChanged.ESTABLISHED)
                 reader, writer = connection
 
+                watchdog_queue.put_nowait('Prompt before auth')
                 recieved_data = await authorise(token, writer, reader)
+                watchdog_queue.put_nowait('Authorization done')
                 if not recieved_data:
                     raise InvalidToken('Проверьте токен, сервер его не узнал.')
 
@@ -70,6 +72,7 @@ async def write_tcp_connection(
                 
                 while True:
                     message = await sending_queue.get()
+                    watchdog_queue.put_nowait('Message sent')
                     await submit_message(writer, message)
         except (TimeoutError, socket.gaierror):
             status_queue.put_nowait(gui.SendingConnectionStateChanged.INITIATED)
