@@ -19,7 +19,7 @@ watchdog_logger = logging.getLogger('watchdog_logger')
 
 
 def get_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description='Read messages from TCP connection')
+    parser = argparse.ArgumentParser(description='GUI for Minechat')
     parser.add_argument('--l_port', default=os.getenv('LISTEN_PORT') or 5000, type=int, help='Port to read messages')
     parser.add_argument('--w_port', default=os.getenv('WRITE_PORT') or 5050, type=int, help='Port to wrtie messages')
     parser.add_argument('--host', default=os.getenv('HOST') or 'minechat.dvmn.org', help='Host to connection')

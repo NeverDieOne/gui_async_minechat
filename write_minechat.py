@@ -12,21 +12,6 @@ def clean_string(string: str) -> str:
     return string.replace('\\n', '')
 
 
-async def register(
-    username: str,
-    writer: asyncio.StreamWriter,
-    reader: asyncio.StreamReader
-) -> dict:
-    writer.write(f"{clean_string(username)}\n\n".encode())
-    await writer.drain()
-
-    logging.info(await reader.readuntil(b'\n'))
-    recieved_data = json.loads(await reader.readuntil(b'\n'))
-    logging.info(recieved_data)
-
-    return recieved_data
-
-
 async def authorise(
     token: str,
     writer: asyncio.StreamWriter,
