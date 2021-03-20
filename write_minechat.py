@@ -1,11 +1,10 @@
 import asyncio
-import logging
 import json
-import socket
+import logging
 
-from socket_context import open_connection
-from exceptions import InvalidToken
 import gui
+from exceptions import InvalidToken
+from socket_context import open_connection
 
 
 def clean_string(string: str) -> str:
@@ -40,25 +39,20 @@ async def write_tcp_connection(
     status_queue: asyncio.Queue,
     watchdog_queue: asyncio.Queue
 ) -> None:
-    while True:
-        try:
-            async with open_connection(host, port) as connection:
-                reader, writer = connection
+    async with open_connection(host, port) as connection:
+        reader, writer = connection
 
-                watchdog_queue.put_nowait('Prompt before auth')
-                recieved_data = await authorise(token, writer, reader)
-                watchdog_queue.put_nowait('Authorization done')
-                if not recieved_data:
-                    raise InvalidToken('Проверьте токен, сервер его не узнал.')
+        watchdog_queue.put_nowait('Prompt before auth')
+        recieved_data = await authorise(token, writer, reader)
+        watchdog_queue.put_nowait('Authorization done')
+        if not recieved_data:
+            raise InvalidToken('Проверьте токен, сервер его не узнал.')
 
-                await reader.readuntil(b'\n')
-                event = gui.NicknameReceived(recieved_data['nickname'])
-                status_queue.put_nowait(event)
-                
-                while True:
-                    message = await sending_queue.get()
-                    watchdog_queue.put_nowait('Message sent')
-                    await submit_message(writer, message)
-        except (TimeoutError, socket.gaierror):
-            status_queue.put_nowait(gui.SendingConnectionStateChanged.INITIATED)
-            await asyncio.sleep(10)
+        await reader.readuntil(b'\n')
+        event = gui.NicknameReceived(recieved_data['nickname'])
+        status_queue.put_nowait(event)
+        
+        while True:
+            message = await sending_queue.get()
+            watchdog_queue.put_nowait('Message sent')
+            await submit_message(writer, message)

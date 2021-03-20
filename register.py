@@ -1,15 +1,17 @@
-import asyncio
-import tkinter as tk
-import json
 import argparse
-import os
+import asyncio
+import contextlib
+import json
 import logging
+import os
+import tkinter as tk
 
 import aiofiles
+from anyio import create_task_group, run
 
-from write_minechat import clean_string
 from gui import TkAppClosed
 from socket_context import open_connection
+from write_minechat import clean_string
 
 
 async def register(
@@ -98,12 +100,11 @@ async def main():
     register_queue = asyncio.Queue()
     root_frame = create_gui(register_queue)
     
-
-    await asyncio.gather(
-        update_tk(root_frame),
-        register_handler(args.host, args.port, args.output, register_queue)
-    )
+    with contextlib.suppress(KeyboardInterrupt, TkAppClosed):
+        async with create_task_group() as tg:
+            await tg.spawn(update_tk, root_frame)
+            await tg.spawn(register_handler, args.host, args.port, args.output, register_queue)
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    run(main)

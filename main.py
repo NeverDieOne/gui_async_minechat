@@ -1,19 +1,19 @@
-import asyncio
 import argparse
-import os
+import asyncio
 import logging
-from tkinter import messagebox
+import os
+import socket
 import time
-from contextlib import suppress
+from tkinter import messagebox
 
+from anyio import ExceptionGroup, create_task_group, run
 from async_timeout import timeout
 from dotenv import load_dotenv
 
+import gui
 import listen_minechat
 import write_minechat
-import gui
 from exceptions import InvalidToken
-
 
 watchdog_logger = logging.getLogger('watchdog_logger')
 
@@ -29,20 +29,44 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-async def watch_for_connection(watchdog_queue: asyncio.Queue, status_queue: asyncio.Queue) -> None:
+async def handle_connection(
+    args: argparse.Namespace,
+    message_queue: asyncio.Queue,
+    sending_queue: asyncio.Queue,
+    file_queue: asyncio.Queue,
+    watchdog_queue: asyncio.Queue,
+    status_queue: asyncio.Queue
+) -> None:
     while True:
+        try:
+            async with create_task_group() as tg:
+                await tg.spawn(listen_minechat.listen_tcp_connection, args.host, args.l_port, message_queue, file_queue, watchdog_queue)
+                await tg.spawn(write_minechat.write_tcp_connection, args.host, args.w_port, args.token, sending_queue, status_queue, watchdog_queue)
+                await tg.spawn(watch_for_connection, watchdog_queue, sending_queue)
+                status_queue.put_nowait(gui.ReadConnectionStateChanged.ESTABLISHED)
+                status_queue.put_nowait(gui.SendingConnectionStateChanged.ESTABLISHED)
+        except (ConnectionError, socket.gaierror, ExceptionGroup):
+            status_queue.put_nowait(gui.ReadConnectionStateChanged.INITIATED)
+            status_queue.put_nowait(gui.SendingConnectionStateChanged.INITIATED)
+            logging.info('Some trouble with connecion')
+            await asyncio.sleep(10)
+
+
+async def watch_for_connection(
+    watchdog_queue: asyncio.Queue,
+    sending_queue: asyncio.Queue
+) -> None:
+    while True:
+        sending_queue.put_nowait('')
         timestamp = int(time.time())
-        time_out = 10
+        time_out = 1
         try:
             async with timeout(time_out):
                 message = await watchdog_queue.get()
-                logging.info(f'[{timestamp}] {message}')
-                status_queue.put_nowait(gui.ReadConnectionStateChanged.ESTABLISHED)
-                status_queue.put_nowait(gui.SendingConnectionStateChanged.ESTABLISHED)
+                watchdog_logger.info(f'[{timestamp}] {message}')
         except asyncio.exceptions.TimeoutError:
-            status_queue.put_nowait(gui.ReadConnectionStateChanged.CLOSED)
-            status_queue.put_nowait(gui.SendingConnectionStateChanged.CLOSED)
-            logging.info(f'[{timestamp}] {time_out}s timeout is elapsed')
+            watchdog_logger.info(f'[{timestamp}] {time_out}s timeout is elapsed')
+            raise ConnectionError
 
 
 async def main():
@@ -58,21 +82,15 @@ async def main():
     watchdog_queue = asyncio.Queue()
 
     try:
-        await asyncio.gather(
-            listen_minechat.listen_tcp_connection(
-                args.host, args.l_port, message_queue, file_queue, status_updates_queue, watchdog_queue
-            ),
-            listen_minechat.save_messages(args.file, message_queue, file_queue),
-            write_minechat.write_tcp_connection(
-                args.host, args.w_port, args.token, sending_queue, status_updates_queue, watchdog_queue
-            ),
-            watch_for_connection(watchdog_queue, status_updates_queue),
-            gui.draw(message_queue, sending_queue, status_updates_queue),
-        )
-    except InvalidToken as e:
+        async with create_task_group() as tg:
+            await tg.spawn(listen_minechat.save_messages, args.file, message_queue, file_queue)
+            await tg.spawn(handle_connection, args, message_queue, sending_queue, file_queue, watchdog_queue, status_updates_queue)
+            await tg.spawn(gui.draw, message_queue, sending_queue, status_updates_queue)
+    except InvalidToken:
         messagebox.showwarning('Неверный токен', 'Проверьте токен, сервер его не узнал.')
+    except (KeyboardInterrupt, gui.TkAppClosed):
+        pass
 
 
 if __name__ == '__main__':
-    with suppress(KeyboardInterrupt, gui.TkAppClosed):
-        asyncio.run(main())
+    run(main)

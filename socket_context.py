@@ -1,7 +1,7 @@
-from contextlib import asynccontextmanager
 import asyncio
-import socket
 import platform
+import socket
+from contextlib import asynccontextmanager
 
 from exceptions import UnavailableOS
 
