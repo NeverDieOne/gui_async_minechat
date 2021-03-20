@@ -5,8 +5,8 @@
 ## Установка
 
 ```bash
->> git clone https://github.com/NeverDieOne/async_minechat.git
->> cd async_minechat
+>> git clone https://github.com/NeverDieOne/gui_async_minechat.git
+>> cd gui_async_minechat
 >> python -m venv venv
 >> source venv/bin/activate
 >> pip install -r requirements.txt
