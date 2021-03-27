@@ -40,6 +40,7 @@ async def write_tcp_connection(
     watchdog_queue: asyncio.Queue
 ) -> None:
     async with open_connection(host, port) as connection:
+        status_queue.put_nowait(gui.SendingConnectionStateChanged.ESTABLISHED)
         reader, writer = connection
 
         watchdog_queue.put_nowait('Prompt before auth')

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import aiofiles
 
+import gui
 from socket_context import open_connection
 
 
@@ -19,9 +20,11 @@ async def listen_tcp_connection(
     port: int,
     message_queue: asyncio.Queue,
     file_queue: asyncio.Queue,
-    watchdog_queue: asyncio.Queue
+    status_queue: asyncio.Queue,
+    watchdog_queue: asyncio.Queue,
 ) -> None:
     async with open_connection(host, port) as connection:
+        status_queue.put_nowait(gui.ReadConnectionStateChanged.ESTABLISHED)
         reader, writer = connection
         while True:
             message = await get_message(reader)

@@ -40,11 +40,9 @@ async def handle_connection(
     while True:
         try:
             async with create_task_group() as tg:
-                await tg.spawn(listen_minechat.listen_tcp_connection, args.host, args.l_port, message_queue, file_queue, watchdog_queue)
+                await tg.spawn(listen_minechat.listen_tcp_connection, args.host, args.l_port, message_queue, file_queue, status_queue, watchdog_queue)
                 await tg.spawn(write_minechat.write_tcp_connection, args.host, args.w_port, args.token, sending_queue, status_queue, watchdog_queue)
                 await tg.spawn(watch_for_connection, watchdog_queue, sending_queue)
-                status_queue.put_nowait(gui.ReadConnectionStateChanged.ESTABLISHED)
-                status_queue.put_nowait(gui.SendingConnectionStateChanged.ESTABLISHED)
         except (ConnectionError, socket.gaierror, ExceptionGroup):
             status_queue.put_nowait(gui.ReadConnectionStateChanged.INITIATED)
             status_queue.put_nowait(gui.SendingConnectionStateChanged.INITIATED)
