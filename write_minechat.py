@@ -54,5 +54,5 @@ async def write_tcp_connection(
         
         while True:
             message = await sending_queue.get()
-            watchdog_queue.put_nowait('Message sent')
             await submit_message(writer, message)
+            watchdog_queue.put_nowait('Message sent')
