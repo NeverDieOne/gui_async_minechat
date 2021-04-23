@@ -26,7 +26,12 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--file', default=os.getenv('OUTPUT_FILE') or 'output.txt', help='Output file with chat')
     parser.add_argument('--token', default=os.getenv('MINECHAT_TOKEN'), help='Token to connect')
     parser.add_argument('--username', default=os.getenv('MINECHAT_USERNAME') or 'JustName', help='Username to connect')
-    return parser.parse_args()
+
+    args = parser.parse_args()
+    if not args.token:
+        raise InvalidToken('Token is required argument')
+
+    return args
 
 
 async def handle_connection(
