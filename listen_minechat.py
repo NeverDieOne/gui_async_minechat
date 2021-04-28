@@ -6,6 +6,7 @@ import aiofiles
 
 import gui
 from socket_context import open_connection
+from status_context import manage_status
 
 
 async def get_message(reader: asyncio.StreamReader) -> str:
@@ -23,17 +24,21 @@ async def listen_tcp_connection(
     status_queue: asyncio.Queue,
     watchdog_queue: asyncio.Queue,
 ) -> None:
-    async with open_connection(host, port) as connection:
-        status_queue.put_nowait(gui.ReadConnectionStateChanged.ESTABLISHED)
-        reader, writer = connection
-        while True:
-            message = await get_message(reader)
-            message_queue.put_nowait(message.strip())
-            file_queue.put_nowait(message)
-            watchdog_queue.put_nowait('New message in chat')
+    async with manage_status(status_queue, gui.ReadConnectionStateChanged):
+        async with open_connection(host, port) as connection:
+            reader, writer = connection
+            while True:
+                message = await get_message(reader)
+                message_queue.put_nowait(message.strip())
+                file_queue.put_nowait(message)
+                watchdog_queue.put_nowait('New message in chat')
 
 
-async def save_messages(filepath, message_queue: asyncio.Queue, file_queue: asyncio.Queue) -> None:
+async def save_messages(
+    filepath, 
+    message_queue: asyncio.Queue, 
+    file_queue: asyncio.Queue
+) -> None:
     Path(filepath).touch(exist_ok=True)
 
     async with aiofiles.open(filepath, mode='r+') as file:

@@ -5,6 +5,7 @@ import logging
 import gui
 from exceptions import InvalidToken
 from socket_context import open_connection
+from status_context import manage_status
 
 
 def clean_string(string: str) -> str:
@@ -39,21 +40,21 @@ async def write_tcp_connection(
     status_queue: asyncio.Queue,
     watchdog_queue: asyncio.Queue
 ) -> None:
-    async with open_connection(host, port) as connection:
-        status_queue.put_nowait(gui.SendingConnectionStateChanged.ESTABLISHED)
-        reader, writer = connection
+    async with manage_status(status_queue, gui.SendingConnectionStateChanged):
+        async with open_connection(host, port) as connection:
+            reader, writer = connection
 
-        watchdog_queue.put_nowait('Prompt before auth')
-        recieved_data = await authorise(token, writer, reader)
-        watchdog_queue.put_nowait('Authorization done')
-        if not recieved_data:
-            raise InvalidToken('Проверьте токен, сервер его не узнал.')
+            watchdog_queue.put_nowait('Prompt before auth')
+            recieved_data = await authorise(token, writer, reader)
+            watchdog_queue.put_nowait('Authorization done')
+            if not recieved_data:
+                raise InvalidToken('Проверьте токен, сервер его не узнал.')
 
-        await reader.readuntil(b'\n')
-        event = gui.NicknameReceived(recieved_data['nickname'])
-        status_queue.put_nowait(event)
-        
-        while True:
-            message = await sending_queue.get()
-            await submit_message(writer, message)
-            watchdog_queue.put_nowait('Message sent')
+            await reader.readuntil(b'\n')
+            event = gui.NicknameReceived(recieved_data['nickname'])
+            status_queue.put_nowait(event)
+            
+            while True:
+                message = await sending_queue.get()
+                await submit_message(writer, message)
+                watchdog_queue.put_nowait('Message sent')

@@ -90,13 +90,31 @@ def create_status_panel(root_frame):
     connections_frame = tk.Frame(status_frame)
     connections_frame.pack(side="left")
 
-    nickname_label = tk.Label(connections_frame, height=1, fg='grey', font='arial 10', anchor='w')
+    nickname_label = tk.Label(
+        connections_frame,
+        height=1,
+        fg='grey',
+        font='arial 10',
+        anchor='w'
+    )
     nickname_label.pack(side="top", fill=tk.X)
 
-    status_read_label = tk.Label(connections_frame, height=1, fg='grey', font='arial 10', anchor='w')
+    status_read_label = tk.Label(
+        connections_frame,
+        height=1,
+        fg='grey',
+        font='arial 10',
+        anchor='w'
+    )
     status_read_label.pack(side="top", fill=tk.X)
 
-    status_write_label = tk.Label(connections_frame, height=1, fg='grey', font='arial 10', anchor='w')
+    status_write_label = tk.Label(
+        connections_frame,
+        height=1,
+        fg='grey',
+        font='arial 10',
+        anchor='w'
+    )
     status_write_label.pack(side="top", fill=tk.X)
 
     return (nickname_label, status_read_label, status_write_label)
@@ -118,7 +136,10 @@ async def draw(messages_queue, sending_queue, status_updates_queue):
     input_field = tk.Entry(input_frame)
     input_field.pack(side="left", fill=tk.X, expand=True)
 
-    input_field.bind("<Return>", lambda event: process_new_message(input_field, sending_queue))
+    input_field.bind(
+        "<Return>",
+        lambda event: process_new_message(input_field, sending_queue)
+    )
 
     send_button = tk.Button(input_frame)
     send_button["text"] = "Отправить"
@@ -130,5 +151,9 @@ async def draw(messages_queue, sending_queue, status_updates_queue):
 
     async with create_task_group() as tg:
         await tg.spawn(update_tk, root_frame)
-        await tg.spawn(update_conversation_history, conversation_panel, messages_queue)
+        await tg.spawn(
+            update_conversation_history,
+            conversation_panel,
+            messages_queue
+        )
         await tg.spawn(update_status_panel, status_labels, status_updates_queue)

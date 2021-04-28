@@ -50,13 +50,28 @@ async def register_handler(
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Register in Minechat')
-    parser.add_argument('--host', default=os.getenv('HOST') or 'minechat.dvmn.org', help='Host to connection')
-    parser.add_argument('--port', default=os.getenv('WRITE_PORT') or 5050, type=int, help='Port to connection')
-    parser.add_argument('--output', default='register.txt', help='File to write register data')
+    parser.add_argument(
+        '--host',
+        default=os.getenv('HOST') or 'minechat.dvmn.org',
+        help='Host to connection')
+    parser.add_argument(
+        '--port',
+        default=os.getenv('WRITE_PORT') or 5050,
+        type=int,
+        help='Port to connection'
+    )
+    parser.add_argument(
+        '--output',
+        default='register.txt',
+        help='File to write register data'
+    )
     return parser.parse_args()
 
 
-def process_register(input_field: tk.Entry, register_queue: asyncio.Queue) -> None:
+def process_register(
+    input_field: tk.Entry,
+    register_queue: asyncio.Queue
+) -> None:
     username = input_field.get()
     register_queue.put_nowait(username)
     input_field.delete(0, tk.END)
@@ -76,7 +91,10 @@ def create_gui(register_queue: asyncio.Queue) -> tk.Frame:
     input_field = tk.Entry(input_frame)
     input_field.pack(side="left", fill=tk.X, expand=True)
 
-    input_field.bind("<Return>", lambda event: process_register(input_field, register_queue))
+    input_field.bind(
+        "<Return>",
+        lambda event: process_register(input_field, register_queue)
+    )
 
     send_button = tk.Button(input_frame)
     send_button["text"] = "Отправить"
@@ -103,7 +121,13 @@ async def main():
     with contextlib.suppress(KeyboardInterrupt, TkAppClosed):
         async with create_task_group() as tg:
             await tg.spawn(update_tk, root_frame)
-            await tg.spawn(register_handler, args.host, args.port, args.output, register_queue)
+            await tg.spawn(
+                register_handler,
+                args.host,
+                args.port,
+                args.output,
+                register_queue
+            )
 
 
 if __name__ == '__main__':
